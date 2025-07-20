@@ -1,0 +1,35 @@
+services:
+  whisper:
+    build: ./whisper_service
+    volumes:
+      - ./audio:/data/audio
+    command: python3 main.py  # replace with actual STT script
+    restart: unless-stopped
+
+  tts:
+    build: ./tts_service
+    volumes:
+      - ./audio:/data/audio
+    command: python3 speak.py  # replace with actual TTS script
+    restart: unless-stopped
+
+  assistant:
+    build: ./assistant_core
+    volumes:
+      - ./files:/data/files
+      - ./audio:/data/audio
+    environment:
+      - OPENAI_API_KEY=your-openai-key
+      - HOME_ASSISTANT_URL=http://homeassistant:8123
+    command: python3 assistant.py
+    restart: unless-stopped
+    depends_on:
+      - whisper
+      - tts
+
+  homeassistant:
+    image: homeassistant/home-assistant:stable
+    volumes:
+      - ./ha_config:/config
+    network_mode: host  # or use ports below if not on Linux
+    restart: unless-stopped
